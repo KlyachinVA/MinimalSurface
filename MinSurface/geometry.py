@@ -4,7 +4,7 @@ import math
 class Point:
     def __init__(s,p):
         s.P=np.array(p)
-        s.n=s.P.ndim
+        s.n=len(s.P)
 
     def cross(s,b):
         c0=s.P[1]*b.P[2]-s.P[2]*b.P[1]
