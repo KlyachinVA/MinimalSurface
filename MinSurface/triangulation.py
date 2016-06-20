@@ -8,6 +8,8 @@ class Triangulation:
         s.N=len(P)
         s.M=len(T)
         s.Bnd=Bnd
+        s.EdgesBnd=[]
+        s.NE={}
     def add(s,e,v):
         s.T.append([e.e[0].num,e.e[1].num,v.num])
     def find_edge(s,te):
@@ -152,21 +154,29 @@ class Triangulation:
                     edges1.append([i,g])
                     bound.add(i) 
         				
-        # edges=[]
-        # b=[]
-        # a=[]
-        # for k in range(len(edges1)):
-            # a=list([edges1[k][1],edges1[k][0]])
-            # b=list([edges1[k][0], edges1[k][1]])
-            # if (not( (a in edges) or ( b in edges))): edges.append(edges1[k])
+        edges=[]
+        b=[]
+        a=[]
+        for k in range(len(edges1)):
+            a=list([edges1[k][1],edges1[k][0]])
+            b=list([edges1[k][0], edges1[k][1]])
+            if (not( (a in edges) or ( b in edges))): edges.append(edges1[k])
             # #print edges  
              		
         s.Bnd=list(bound)
+        s.EdgesBnd=edges
         # print edges	
         # print bound
         #print edges		
         return bound#, edges 
-		
+    def createNE(s):
+        for k in s.Bnd:
+            s.NE[k]=[]
+        for e in s.EdgesBnd:
+            s.NE[e[0]].append(e[1])
+            s.NE[e[1]].append(e[0])
+            
+        			
     def find_boundary(s):
         v=s.P
         f=s.T
