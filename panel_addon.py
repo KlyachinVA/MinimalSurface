@@ -12,8 +12,12 @@ from .MinSurface import tentsurface as tnt
 
 global st
 global ni
+global tens
+global density
 st=0.09
 ni=5
+tens=1.0
+density=0.1
 def find_boundary1(v,f,t):
     temp=[]
     bound=set() 	
@@ -44,7 +48,12 @@ def find_boundary1(v,f,t):
         a=list([edges1[k][1],edges1[k][0]])
         b=list([edges1[k][0], edges1[k][1]])
         if ( a not in edges) and ( b not in edges): edges.append(edges1[k])
-        		
+        #print edges  
+             		
+		
+    #print edges	
+    #print bound
+    #print edges		
     return list(bound), edges 		
 
 
@@ -79,6 +88,8 @@ def make_polygon():
 
     bpoints,edges=find_boundary1(verts,faces,neighbours)
 
+#print(bpoints)
+#print(edges)
     ob.select=False
 #создается пустая сетка
     pol_me = bpy.data.meshes.new("Polygon")
@@ -106,15 +117,54 @@ def make_polygon():
 
     pol_me.from_pydata(bverts, bedges, [])
     pol_me.update()
-
-def make_minsurface():
-    global st,ni
+def make_cmcsurface():
+    global st,ni,density,tens
     t1=load_object()
     t1.createNT()
     
     t1.find_boundary1()
     	
+    smin=ndv.MinimalSquare(t1,eps=st)
+    smin.create_subLin()
+    smin.tension(tens)	
+    smin.density(density)
+    xp=t1.P
+    x0=[]
+    for p in xp:
+	    x0.append(p.P)
+    y=smin.process(ni,x0)
+    #t1.save_obj_points("c:/111/min.obj",y)
+    make_surface(t1,y)
+	
+def make_capillarsurface():
+    global st,ni,density,tens
+    t1=load_object()
+    t1.createNT()
+    
+    t1.find_boundary1()
+    t1.createNE()
+    
+    smin=ndv.CapillarSurface(t1,eps=st)
+    smin.create_subLin()
+    smin.tension(tens)	
+    smin.density(density)
+    xp=t1.P
+    x0=[]
+    for p in xp:
+	    x0.append(p.P)
+    y=smin.process(ni,x0)
+    #t1.save_obj_points("c:/111/min.obj",y)
+    make_surface(t1,y)
+	
+def make_minsurface():
+    global st,ni,density,tens
+    t1=load_object()
+    t1.createNT()
+    
+    t1.find_boundary1()
+   	
     smin=ndv.MinimalSquare(t1,eps=st)	
+    smin.tension(tens)
     xp=t1.P
     x0=[]
     for p in xp:
@@ -123,12 +173,14 @@ def make_minsurface():
     #t1.save_obj_points("c:/111/min.obj",y)
     make_surface(t1,y)
 def make_tentsurface():
-    global st,ni
+    global st,ni,density,tens
     t1=load_object()
     t1.createNT()
+    
     t1.find_boundary1()
     	
     smin=tnt.MinimalTent(t1,eps=st)	
+    smin.tension(tens)
     xp=t1.P
     x0=[]
     for p in xp:
@@ -203,21 +255,28 @@ class Settings(bpy.types.Operator):
 #надпись на кнопке
     bl_label = "Settings"
     bl_options = {'REGISTER', 'UNDO'}
+    tens = bpy.props.FloatProperty(name="Surface tension",
+        default=1.00, min=0.0001, max=10.0)
+    density = bpy.props.FloatProperty(name="Density",
+        default=0.10, min=0.0001, max=10.0)
     step = bpy.props.FloatProperty(name="Step",
-            default=0.09, min=0.005, max=0.09)
+            default=0.09, min=0.0001, max=10.0)
     niter = bpy.props.IntProperty(name="Number of iterations",
             description="Number of iterations",
             default=5, min=5, max=1000)
+
     
 #метод execute — виртуальный метод, в котором
 #задается
 #обработка действия пользователя.
     def execute(self, context):
         #make_polygon()
-        global st,ni
+        global st,ni,density,tens
         st=self.step
         ni=self.niter
-        
+        tens=self.tens
+        density=self.density
+        #print(self.step,self.niter)
         return{'FINISHED'}
 
 class FindMinSurface(bpy.types.Operator):
@@ -231,6 +290,29 @@ class FindMinSurface(bpy.types.Operator):
         make_minsurface()
 
         return{'FINISHED'}
+class FindCMCSurface(bpy.types.Operator):
+    bl_idname = "object.cmcsurface"
+#надпись на кнопке
+    bl_label = "FIND CMC surface"
+#метод execute — виртуальный метод, в котором
+#задается
+#обработка действия пользователя.
+    def execute(self, context):
+        make_cmcsurface()
+
+        return{'FINISHED'}
+class FindCapillarSurface(bpy.types.Operator):
+    bl_idname = "object.capillarsurface"
+#надпись на кнопке
+    bl_label = "FIND Capillar surface"
+#метод execute — виртуальный метод, в котором
+#задается
+#обработка действия пользователя.
+    def execute(self, context):
+        make_capillarsurface()
+
+        return{'FINISHED'}
+
 class FindTentSurface(bpy.types.Operator):
     bl_idname = "object.tentsurface"
 #надпись на кнопке
@@ -243,7 +325,7 @@ class FindTentSurface(bpy.types.Operator):
 
         return{'FINISHED'}
 
-class MyPanel(bpy.types.Panel): #Создается класс с типом меню Panel
+class MinimalSurfacePanel(bpy.types.Panel): #Создается класс с типом меню Panel
   bl_label = "Minimal surfaces"	        #Название меню
   bl_space_type = 'VIEW_3D'	#Окно расположения
   bl_region_type = 'TOOLS'	#Панель расположения
@@ -261,17 +343,20 @@ class MyPanel(bpy.types.Panel): #Создается класс с типом меню Panel
     col.operator("object.boundary", text="FIND", icon="MESH_CUBE")
     col.label(text="Press for settings")
     col.operator("object.settings", text="Settings", icon="MESH_CUBE")
+    col.label(text="Press for construct the surface")
     col.operator("object.minsurface", text="FIND Minsurface", icon="MESH_CUBE")
     col.operator("object.tentsurface", text="FIND tent surface", icon="MESH_CUBE")
+    col.operator("object.cmcsurface", text="FIND CMC surface", icon="MESH_CUBE")
+    col.operator("object.capillarsurface", text="FIND Capillar surface", icon="MESH_CUBE")
     #Выводится кнопка создания куба с текстом и иконкой
     #col.operator("mesh.primitive_monkey_add", text="Monkey", icon="MESH_MONKEY")
     #Выводится кнопка создания Сюзанны с текстом и иконкой
  
 def register():		#Функция загружает скрипт при включении аддона
-  bpy.utils.register_class(MyPanel)
+  bpy.utils.register_class(MinimalSurfacePanel)
  
 def unregister():	#Функция выгружает скрипт при отключении аддона
-  bpy.utils.unregister_class(MyPanel)
+  bpy.utils.unregister_class(MinimalSurfacePanel)
  
 if __name__ == "__main__":
   register()
