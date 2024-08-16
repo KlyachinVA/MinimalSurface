@@ -66,7 +66,7 @@ class Side(Simplex):
                     ei.append(e.e[j])
                 else: ei.append(v)
             ee.append(Side(ei))
-        #print ee
+        #print(ee)
         # e1=Side([e.e[0],v])
         # e2=Side([v,e.e[1]])
         return ee#[e1,e2]
