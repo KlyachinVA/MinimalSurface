@@ -138,3 +138,7 @@ class CapillarSurface(MinimalSquare):
             else : grad[i]=s.alpha*gd+ar
         #print(grad)		
         return grad
+
+
+if __name__ == "__main__":
+	print("OK!")
