@@ -142,3 +142,5 @@ class CapillarSurface(MinimalSquare):
 
 if __name__ == "__main__":
 	print("OK!")
+	print(f"x={1}")
+
